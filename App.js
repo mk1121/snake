@@ -70,7 +70,7 @@ export default function App() {
   };
 
   const saveScore = async () => {
-    const newScore = { username, score, date: new Date().toLocaleDateString() };
+    const newScore = { username, score };
     const updatedScores = [newScore, ...scores].sort((a, b) => b.score - a.score).slice(0, 5);
     setScores(updatedScores);
     saveData('scores', updatedScores);
@@ -195,7 +195,7 @@ export default function App() {
               data={scores}
               keyExtractor={(_, i) => i.toString()}
               renderItem={({ item }) => (
-                <View style={styles.scoreItem}><Text style={styles.scoreItemText}>{item.username}: {item.score}</Text><Text style={styles.scoreDate}>{item.date}</Text></View>
+                <View style={styles.scoreItem}><Text style={styles.scoreItemText}>{item.username}: {item.score}</Text></View>
               )}
               style={styles.scoreList}
             />
@@ -238,7 +238,6 @@ const styles = StyleSheet.create({
   smallBtnText: { color: '#8bab3e', fontSize: 20, fontWeight: 'bold' },
   scoreTitle: { fontSize: 20, fontWeight: 'bold', marginTop: 10, marginBottom: 5, fontFamily: 'monospace' },
   scoreList: { width: '100%', maxHeight: 150 },
-  scoreItem: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingVertical: 5, borderBottomWidth: 1, borderColor: '#000' },
-  scoreItemText: { fontFamily: 'monospace', fontSize: 14 },
-  scoreDate: { fontFamily: 'monospace', fontSize: 12, color: '#333' }
+  scoreItem: { flexDirection: 'row', justifyContent: 'center', width: '100%', paddingVertical: 8, borderBottomWidth: 1, borderColor: '#000' },
+  scoreItemText: { fontFamily: 'monospace', fontSize: 16, fontWeight: 'bold' }
 });
