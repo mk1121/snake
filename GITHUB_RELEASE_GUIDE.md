@@ -11,8 +11,11 @@ Before creating a release, ensure the application is stable and the documentatio
         ```bash
         eas build --platform android --profile preview
         ```
-    *   This will generate an `.apk` file that can be downloaded from the Expo dashboard.
-3.  **Local Artifacts:** Ensure you have the final `snake_xenzia.zip` and the production `.apk` ready for upload.
+    *   This will generate an `.apk` file on the Expo servers.
+3.  **Local Artifacts:** 
+    *   Download the `.apk` file from the Expo dashboard.
+    *   **Rename the APK file** to include the project name and version (e.g., `snake-xenzia-v1.0.0.apk`) for clear identification in the release.
+    *   Ensure you have the final `snake_xenzia.zip` ready for upload.
 
 ## II. Pushing to GitHub
 Ensure all latest changes and documentation are pushed to the main branch:

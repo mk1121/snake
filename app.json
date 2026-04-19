@@ -24,7 +24,8 @@
       "package": "com.mk1121.snake"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "Snake Xenzia"
     },
     "extra": {
       "eas": {

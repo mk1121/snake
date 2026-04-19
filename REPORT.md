@@ -1,13 +1,15 @@
 # Project Report: Technical Analysis and Execution of Snake Xenzia
 
 ## I. Executive Summary
-This report delineates the successful deployment of a mobile-based recreation of Snake Xenzia. The implementation utilizes React Native to simulate complex legacy game logic within a modern sandboxed environment.
+This report delineates the successful deployment of a multi-platform recreation of Snake Xenzia. The implementation utilizes React Native and the Expo ecosystem to simulate complex legacy game logic within modern Android and Web-based environments.
 
 ## II. System Architecture
-### A. Data Structure Analysis
+### A. Platform Compatibility
+The application leverages the "Write Once, Run Anywhere" paradigm, utilizing `react-native-web` to ensure seamless execution on both native mobile runtimes and modern web browsers.
+### B. Data Structure Analysis
 The snake entity is modeled as a contiguous array of Cartesian coordinate objects. Movement is achieved through a "head-prepend and tail-pop" algorithm, ensuring O(1) or O(n) complexity relative to the snake's length.
 
-### B. Game Loop and Synchronization
+### C. Game Loop and Synchronization
 The core execution cycle is governed by a state-driven interval.
 *   **Interval Formula:** $T_{tick} = \max(50ms, 200ms - (Level \times 20ms))$
 *   This formula ensures a linear increase in difficulty across the defined Level spectrum.
