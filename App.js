@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Dimensions, TextInput, FlatList, Modal } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, Dimensions, TextInput, FlatList, Modal, PanResponder } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -22,6 +22,7 @@ export default function App() {
   const [level, setLevel] = useState(1);
   const [username, setUsername] = useState('Player');
   const [isHapticEnabled, setIsHapticEnabled] = useState(true);
+  const [controlType, setControlType] = useState('KEYPAD');
   const [scores, setScores] = useState([]);
   const [isMenuVisible, setIsMenuVisible] = useState(true);
 
@@ -34,17 +35,17 @@ export default function App() {
       const savedScores = await AsyncStorage.getItem('scores');
       const savedUser = await AsyncStorage.getItem('username');
       const savedHaptic = await AsyncStorage.getItem('haptic');
+      const savedControl = await AsyncStorage.getItem('control');
       if (savedScores) setScores(JSON.parse(savedScores));
       if (savedUser) setUsername(savedUser);
       if (savedHaptic !== null) setIsHapticEnabled(JSON.parse(savedHaptic));
+      if (savedControl) setControlType(savedControl);
     } catch (e) {}
   };
 
-  const saveData = async (newScores, newUser, newHaptic) => {
+  const saveData = async (key, val) => {
     try {
-      if (newScores) await AsyncStorage.setItem('scores', JSON.stringify(newScores));
-      if (newUser) await AsyncStorage.setItem('username', newUser);
-      await AsyncStorage.setItem('haptic', JSON.stringify(newHaptic));
+      await AsyncStorage.setItem(key, typeof val === 'string' ? val : JSON.stringify(val));
     } catch (e) {}
   };
 
@@ -75,7 +76,7 @@ export default function App() {
     const newScore = { username, score, date: new Date().toLocaleDateString() };
     const updatedScores = [newScore, ...scores].sort((a, b) => b.score - a.score).slice(0, 5);
     setScores(updatedScores);
-    await saveData(updatedScores, null, isHapticEnabled);
+    saveData('scores', updatedScores);
   };
 
   useEffect(() => {
@@ -114,21 +115,32 @@ export default function App() {
     return () => clearInterval(intervalId);
   }, [direction, food, isGameOver, isMenuVisible, level]);
 
-  const handlePress = (newDirection) => {
-    if ((newDirection.x !== 0 && lastProcessedDirection.x === 0) || (newDirection.y !== 0 && lastProcessedDirection.y === 0)) {
+  const handlePress = (newDir) => {
+    if ((newDir.x !== 0 && lastProcessedDirection.x === 0) || (newDir.y !== 0 && lastProcessedDirection.y === 0)) {
       triggerHaptic('Light');
-      setDirection(newDirection);
+      setDirection(newDir);
     }
   };
 
-  const toggleHaptic = () => {
-    const newVal = !isHapticEnabled;
-    setIsHapticEnabled(newVal);
-    saveData(null, null, newVal);
-  };
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => controlType === 'SWIPE',
+      onPanResponderRelease: (e, gestureState) => {
+        if (controlType !== 'SWIPE') return;
+        const { dx, dy } = gestureState;
+        if (Math.abs(dx) > Math.abs(dy)) {
+          if (dx > 30) handlePress({ x: 1, y: 0 });
+          else if (dx < -30) handlePress({ x: -1, y: 0 });
+        } else {
+          if (dy > 30) handlePress({ x: 0, y: 1 });
+          else if (dy < -30) handlePress({ x: 0, y: -1 });
+        }
+      },
+    })
+  ).current;
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} {...panResponder.panHandlers}>
       <StatusBar style="dark" />
       <View style={styles.header}>
         <Text style={styles.headerText}>SCORE: {score}</Text>
@@ -152,30 +164,38 @@ export default function App() {
         )}
       </View>
 
-      <View style={styles.controls}>
-        <View style={styles.controlRow}><TouchableOpacity style={styles.controlButton} onPress={() => handlePress({ x: 0, y: -1 })}><Text style={styles.controlIcon}>▲</Text></TouchableOpacity></View>
-        <View style={styles.controlRow}>
-          <TouchableOpacity style={styles.controlButton} onPress={() => handlePress({ x: -1, y: 0 })}><Text style={styles.controlIcon}>◀</Text></TouchableOpacity>
-          <View style={styles.controlSpacer} />
-          <TouchableOpacity style={styles.controlButton} onPress={() => handlePress({ x: 1, y: 0 })}><Text style={styles.controlIcon}>▶</Text></TouchableOpacity>
+      {controlType === 'KEYPAD' && (
+        <View style={styles.controls}>
+          <View style={styles.controlRow}><TouchableOpacity style={styles.controlButton} onPress={() => handlePress({ x: 0, y: -1 })}><Text style={styles.controlIcon}>▲</Text></TouchableOpacity></View>
+          <View style={styles.controlRow}>
+            <TouchableOpacity style={styles.controlButton} onPress={() => handlePress({ x: -1, y: 0 })}><Text style={styles.controlIcon}>◀</Text></TouchableOpacity>
+            <View style={styles.controlSpacer} />
+            <TouchableOpacity style={styles.controlButton} onPress={() => handlePress({ x: 1, y: 0 })}><Text style={styles.controlIcon}>▶</Text></TouchableOpacity>
+          </View>
+          <View style={styles.controlRow}><TouchableOpacity style={styles.controlButton} onPress={() => handlePress({ x: 0, y: 1 })}><Text style={styles.controlIcon}>▼</Text></TouchableOpacity></View>
         </View>
-        <View style={styles.controlRow}><TouchableOpacity style={styles.controlButton} onPress={() => handlePress({ x: 0, y: 1 })}><Text style={styles.controlIcon}>▼</Text></TouchableOpacity></View>
-      </View>
+      )}
 
       <Modal visible={isMenuVisible} transparent animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>SETTINGS & SCORES</Text>
+            <Text style={styles.modalTitle}>SETTINGS</Text>
             <TextInput
               style={styles.input}
               placeholder="Username"
               value={username}
-              onChangeText={(text) => { setUsername(text); saveData(null, text, isHapticEnabled); }}
+              onChangeText={(t) => { setUsername(t); saveData('username', t); }}
               maxLength={10}
             />
             <View style={styles.settingRow}>
+              <Text style={styles.settingLabel}>CONTROL:</Text>
+              <TouchableOpacity onPress={() => { const n = controlType === 'KEYPAD' ? 'SWIPE' : 'KEYPAD'; setControlType(n); saveData('control', n); }} style={styles.toggleButton}>
+                <Text style={styles.toggleText}>{controlType}</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.settingRow}>
               <Text style={styles.settingLabel}>HAPTIC:</Text>
-              <TouchableOpacity onPress={toggleHaptic} style={styles.toggleButton}>
+              <TouchableOpacity onPress={() => { const n = !isHapticEnabled; setIsHapticEnabled(n); saveData('haptic', n); }} style={styles.toggleButton}>
                 <Text style={styles.toggleText}>{isHapticEnabled ? 'ON' : 'OFF'}</Text>
               </TouchableOpacity>
             </View>
@@ -187,7 +207,7 @@ export default function App() {
             <Text style={styles.scoreTitle}>TOP SCORES</Text>
             <FlatList
               data={scores}
-              keyExtractor={(item, index) => index.toString()}
+              keyExtractor={(_, i) => i.toString()}
               renderItem={({ item }) => (
                 <View style={styles.scoreItem}><Text style={styles.scoreItemText}>{item.username}: {item.score}</Text><Text style={styles.scoreDate}>{item.date}</Text></View>
               )}
