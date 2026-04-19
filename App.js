@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Dimensions, TextInput, FlatList, Modal, PanResponder } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Dimensions, TextInput, FlatList, Modal } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -22,7 +22,6 @@ export default function App() {
   const [level, setLevel] = useState(1);
   const [username, setUsername] = useState('Player');
   const [isHapticEnabled, setIsHapticEnabled] = useState(true);
-  const [controlType, setControlType] = useState('KEYPAD');
   const [scores, setScores] = useState([]);
   const [isMenuVisible, setIsMenuVisible] = useState(true);
 
@@ -35,11 +34,9 @@ export default function App() {
       const savedScores = await AsyncStorage.getItem('scores');
       const savedUser = await AsyncStorage.getItem('username');
       const savedHaptic = await AsyncStorage.getItem('haptic');
-      const savedControl = await AsyncStorage.getItem('control');
       if (savedScores) setScores(JSON.parse(savedScores));
       if (savedUser) setUsername(savedUser);
       if (savedHaptic !== null) setIsHapticEnabled(JSON.parse(savedHaptic));
-      if (savedControl) setControlType(savedControl);
     } catch (e) {}
   };
 
@@ -122,29 +119,14 @@ export default function App() {
     }
   };
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => controlType === 'SWIPE',
-      onPanResponderRelease: (e, gestureState) => {
-        if (controlType !== 'SWIPE') return;
-        const { dx, dy } = gestureState;
-        if (Math.abs(dx) > Math.abs(dy)) {
-          if (dx > 30) handlePress({ x: 1, y: 0 });
-          else if (dx < -30) handlePress({ x: -1, y: 0 });
-        } else {
-          if (dy > 30) handlePress({ x: 0, y: 1 });
-          else if (dy < -30) handlePress({ x: 0, y: -1 });
-        }
-      },
-    })
-  ).current;
+  const buttonHitSlop = { top: 20, bottom: 20, left: 20, right: 20 };
 
   return (
-    <View style={styles.container} {...panResponder.panHandlers}>
+    <View style={styles.container}>
       <StatusBar style="dark" />
       <View style={styles.header}>
         <Text style={styles.headerText}>SCORE: {score}</Text>
-        <TouchableOpacity onPress={() => setIsMenuVisible(true)} style={styles.menuIconButton}>
+        <TouchableOpacity onPress={() => setIsMenuVisible(true)} style={styles.menuIconButton} hitSlop={buttonHitSlop}>
           <Text style={styles.menuIconText}>⚙</Text>
         </TouchableOpacity>
       </View>
@@ -157,24 +139,34 @@ export default function App() {
         {isGameOver && (
           <View style={styles.gameOverOverlay}>
             <Text style={styles.gameOverText}>GAME OVER</Text>
-            <TouchableOpacity style={styles.button} onPress={resetGame}>
+            <TouchableOpacity style={styles.button} onPress={resetGame} hitSlop={buttonHitSlop}>
               <Text style={styles.buttonText}>RESTART</Text>
             </TouchableOpacity>
           </View>
         )}
       </View>
 
-      {controlType === 'KEYPAD' && (
-        <View style={styles.controls}>
-          <View style={styles.controlRow}><TouchableOpacity style={styles.controlButton} onPress={() => handlePress({ x: 0, y: -1 })}><Text style={styles.controlIcon}>▲</Text></TouchableOpacity></View>
-          <View style={styles.controlRow}>
-            <TouchableOpacity style={styles.controlButton} onPress={() => handlePress({ x: -1, y: 0 })}><Text style={styles.controlIcon}>◀</Text></TouchableOpacity>
-            <View style={styles.controlSpacer} />
-            <TouchableOpacity style={styles.controlButton} onPress={() => handlePress({ x: 1, y: 0 })}><Text style={styles.controlIcon}>▶</Text></TouchableOpacity>
-          </View>
-          <View style={styles.controlRow}><TouchableOpacity style={styles.controlButton} onPress={() => handlePress({ x: 0, y: 1 })}><Text style={styles.controlIcon}>▼</Text></TouchableOpacity></View>
+      <View style={styles.controls}>
+        <View style={styles.controlRow}>
+          <TouchableOpacity style={styles.controlButton} onPress={() => handlePress({ x: 0, y: -1 })} hitSlop={buttonHitSlop}>
+            <Text style={styles.controlIcon}>▲</Text>
+          </TouchableOpacity>
         </View>
-      )}
+        <View style={styles.controlRow}>
+          <TouchableOpacity style={styles.controlButton} onPress={() => handlePress({ x: -1, y: 0 })} hitSlop={buttonHitSlop}>
+            <Text style={styles.controlIcon}>◀</Text>
+          </TouchableOpacity>
+          <View style={styles.controlSpacer} />
+          <TouchableOpacity style={styles.controlButton} onPress={() => handlePress({ x: 1, y: 0 })} hitSlop={buttonHitSlop}>
+            <Text style={styles.controlIcon}>▶</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.controlRow}>
+          <TouchableOpacity style={styles.controlButton} onPress={() => handlePress({ x: 0, y: 1 })} hitSlop={buttonHitSlop}>
+            <Text style={styles.controlIcon}>▼</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       <Modal visible={isMenuVisible} transparent animationType="slide">
         <View style={styles.modalContainer}>
@@ -188,21 +180,15 @@ export default function App() {
               maxLength={10}
             />
             <View style={styles.settingRow}>
-              <Text style={styles.settingLabel}>CONTROL:</Text>
-              <TouchableOpacity onPress={() => { const n = controlType === 'KEYPAD' ? 'SWIPE' : 'KEYPAD'; setControlType(n); saveData('control', n); }} style={styles.toggleButton}>
-                <Text style={styles.toggleText}>{controlType}</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.settingRow}>
               <Text style={styles.settingLabel}>HAPTIC:</Text>
-              <TouchableOpacity onPress={() => { const n = !isHapticEnabled; setIsHapticEnabled(n); saveData('haptic', n); }} style={styles.toggleButton}>
+              <TouchableOpacity onPress={() => { const n = !isHapticEnabled; setIsHapticEnabled(n); saveData('haptic', n); }} style={styles.toggleButton} hitSlop={buttonHitSlop}>
                 <Text style={styles.toggleText}>{isHapticEnabled ? 'ON' : 'OFF'}</Text>
               </TouchableOpacity>
             </View>
             <View style={styles.levelRow}>
-              <TouchableOpacity onPress={() => setLevel(p => Math.max(1, p - 1))} style={styles.smallBtn}><Text style={styles.smallBtnText}>-</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setLevel(p => Math.max(1, p - 1))} style={styles.smallBtn} hitSlop={buttonHitSlop}><Text style={styles.smallBtnText}>-</Text></TouchableOpacity>
               <Text style={styles.settingLabel}>LVL: {level}</Text>
-              <TouchableOpacity onPress={() => setLevel(p => Math.min(10, p + 1))} style={styles.smallBtn}><Text style={styles.smallBtnText}>+</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setLevel(p => Math.min(10, p + 1))} style={styles.smallBtn} hitSlop={buttonHitSlop}><Text style={styles.smallBtnText}>+</Text></TouchableOpacity>
             </View>
             <Text style={styles.scoreTitle}>TOP SCORES</Text>
             <FlatList
@@ -213,7 +199,7 @@ export default function App() {
               )}
               style={styles.scoreList}
             />
-            <TouchableOpacity style={styles.button} onPress={resetGame}><Text style={styles.buttonText}>{isGameOver ? 'RESTART' : 'START'}</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.button} onPress={resetGame} hitSlop={buttonHitSlop}><Text style={styles.buttonText}>{isGameOver ? 'RESTART' : 'START'}</Text></TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -236,8 +222,8 @@ const styles = StyleSheet.create({
   buttonText: { color: '#8bab3e', fontSize: 18, fontWeight: 'bold', fontFamily: 'monospace' },
   controls: { marginTop: 40, alignItems: 'center' },
   controlRow: { flexDirection: 'row' },
-  controlButton: { width: 60, height: 60, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center', margin: 5, borderRadius: 30 },
-  controlIcon: { color: '#8bab3e', fontSize: 30 },
+  controlButton: { width: 70, height: 70, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center', margin: 5, borderRadius: 35 },
+  controlIcon: { color: '#8bab3e', fontSize: 35 },
   controlSpacer: { width: 70 },
   modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
   modalContent: { width: '85%', backgroundColor: '#8bab3e', padding: 20, borderRadius: 10, alignItems: 'center', borderWeight: 2, borderColor: '#000' },
