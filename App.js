@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Dimensions, TextInput, FlatList, Modal } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Dimensions, TextInput, FlatList, Modal, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 const GRID_SIZE = 20;
-const CELL_SIZE = Math.floor((width * 0.9) / GRID_SIZE);
+const IS_WEB = Platform.OS === 'web';
+const MAX_BOARD_WIDTH = 500;
+const CELL_SIZE = Math.floor((Math.min(width, MAX_BOARD_WIDTH) * 0.9) / GRID_SIZE);
 const BOARD_SIZE = CELL_SIZE * GRID_SIZE;
 
 const INITIAL_SNAKE = [{ x: 10, y: 10 }, { x: 10, y: 11 }, { x: 10, y: 12 }];
@@ -29,6 +31,22 @@ export default function App() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (IS_WEB) {
+      const handleKeyDown = (e) => {
+        switch (e.key) {
+          case 'ArrowUp': handlePress({ x: 0, y: -1 }); break;
+          case 'ArrowDown': handlePress({ x: 0, y: 1 }); break;
+          case 'ArrowLeft': handlePress({ x: -1, y: 0 }); break;
+          case 'ArrowRight': handlePress({ x: 1, y: 0 }); break;
+          case 'Enter': if (isGameOver || isMenuVisible) resetGame(); break;
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [lastProcessedDirection, isGameOver, isMenuVisible]);
+
   const loadData = async () => {
     try {
       const savedScores = await AsyncStorage.getItem('scores');
@@ -47,7 +65,7 @@ export default function App() {
   };
 
   const triggerHaptic = (style) => {
-    if (isHapticEnabled) {
+    if (isHapticEnabled && !IS_WEB) {
       if (style === 'error') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       else Haptics.impactAsync(Haptics.ImpactFeedbackStyle[style] || Haptics.ImpactFeedbackStyle.Light);
     }
@@ -108,7 +126,7 @@ export default function App() {
       });
     };
 
-    const intervalId = setInterval(moveSnake, Math.max(50, 200 - level * 20));
+    const intervalId = setInterval(moveSnake, Math.max(100, 500 - level * 40));
     return () => clearInterval(intervalId);
   }, [direction, food, isGameOver, isMenuVisible, level]);
 
@@ -148,21 +166,21 @@ export default function App() {
 
       <View style={styles.controls}>
         <View style={styles.controlRow}>
-          <TouchableOpacity style={styles.controlButton} onPress={() => handlePress({ x: 0, y: -1 })} hitSlop={buttonHitSlop}>
+          <TouchableOpacity style={styles.controlButton} onPressIn={() => handlePress({ x: 0, y: -1 })} hitSlop={buttonHitSlop}>
             <Text style={styles.controlIcon}>▲</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.controlRow}>
-          <TouchableOpacity style={styles.controlButton} onPress={() => handlePress({ x: -1, y: 0 })} hitSlop={buttonHitSlop}>
+          <TouchableOpacity style={styles.controlButton} onPressIn={() => handlePress({ x: -1, y: 0 })} hitSlop={buttonHitSlop}>
             <Text style={styles.controlIcon}>◀</Text>
           </TouchableOpacity>
           <View style={styles.controlSpacer} />
-          <TouchableOpacity style={styles.controlButton} onPress={() => handlePress({ x: 1, y: 0 })} hitSlop={buttonHitSlop}>
+          <TouchableOpacity style={styles.controlButton} onPressIn={() => handlePress({ x: 1, y: 0 })} hitSlop={buttonHitSlop}>
             <Text style={styles.controlIcon}>▶</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.controlRow}>
-          <TouchableOpacity style={styles.controlButton} onPress={() => handlePress({ x: 0, y: 1 })} hitSlop={buttonHitSlop}>
+          <TouchableOpacity style={styles.controlButton} onPressIn={() => handlePress({ x: 0, y: 1 })} hitSlop={buttonHitSlop}>
             <Text style={styles.controlIcon}>▼</Text>
           </TouchableOpacity>
         </View>
@@ -208,11 +226,11 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#8bab3e', alignItems: 'center', justifyContent: 'center', paddingTop: 50 },
-  header: { marginBottom: 20, flexDirection: 'row', alignItems: 'center', width: BOARD_SIZE, justifyContent: 'space-between' },
-  headerText: { fontSize: 24, fontWeight: 'bold', color: '#000', fontFamily: 'monospace' },
+  container: { flex: 1, backgroundColor: '#8bab3e', alignItems: 'center', justifyContent: 'center', paddingTop: 20 },
+  header: { marginBottom: 15, flexDirection: 'row', alignItems: 'center', width: BOARD_SIZE, justifyContent: 'space-between' },
+  headerText: { fontSize: 22, fontWeight: 'bold', color: '#000', fontFamily: 'monospace' },
   menuIconButton: { backgroundColor: '#000', padding: 5, borderRadius: 5 },
-  menuIconText: { color: '#8bab3e', fontSize: 20 },
+  menuIconText: { color: '#8bab3e', fontSize: 18 },
   board: { width: BOARD_SIZE, height: BOARD_SIZE, backgroundColor: '#98b64e', borderWidth: 2, borderColor: '#000', position: 'relative' },
   snakeSegment: { position: 'absolute', width: CELL_SIZE, height: CELL_SIZE, backgroundColor: '#000' },
   food: { position: 'absolute', width: CELL_SIZE, height: CELL_SIZE, backgroundColor: '#000', borderRadius: CELL_SIZE / 2 },
@@ -220,24 +238,24 @@ const styles = StyleSheet.create({
   gameOverText: { fontSize: 32, fontWeight: 'bold', color: '#000', marginBottom: 20, fontFamily: 'monospace' },
   button: { backgroundColor: '#000', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 5, marginTop: 10 },
   buttonText: { color: '#8bab3e', fontSize: 18, fontWeight: 'bold', fontFamily: 'monospace' },
-  controls: { marginTop: 40, alignItems: 'center' },
+  controls: { marginTop: 20, alignItems: 'center' },
   controlRow: { flexDirection: 'row' },
-  controlButton: { width: 70, height: 70, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center', margin: 5, borderRadius: 35 },
-  controlIcon: { color: '#8bab3e', fontSize: 35 },
-  controlSpacer: { width: 70 },
+  controlButton: { width: 60, height: 60, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center', margin: 4, borderRadius: 30 },
+  controlIcon: { color: '#8bab3e', fontSize: 30 },
+  controlSpacer: { width: 64 },
   modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalContent: { width: '85%', backgroundColor: '#8bab3e', padding: 20, borderRadius: 10, alignItems: 'center', borderWeight: 2, borderColor: '#000' },
-  modalTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 15, fontFamily: 'monospace' },
-  input: { width: '100%', borderBottomWidth: 2, borderColor: '#000', marginBottom: 15, padding: 5, fontFamily: 'monospace', fontSize: 18 },
+  modalContent: { width: Math.min(width * 0.85, 400), backgroundColor: '#8bab3e', padding: 20, borderRadius: 10, alignItems: 'center', borderWeight: 2, borderColor: '#000' },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 15, fontFamily: 'monospace' },
+  input: { width: '100%', borderBottomWidth: 2, borderColor: '#000', marginBottom: 15, padding: 5, fontFamily: 'monospace', fontSize: 16 },
   settingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, width: '100%', justifyContent: 'space-between' },
-  levelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  settingLabel: { fontSize: 18, fontWeight: 'bold', fontFamily: 'monospace', marginHorizontal: 10 },
+  levelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
+  settingLabel: { fontSize: 16, fontWeight: 'bold', fontFamily: 'monospace', marginHorizontal: 10 },
   toggleButton: { backgroundColor: '#000', paddingHorizontal: 15, paddingVertical: 5, borderRadius: 5 },
   toggleText: { color: '#8bab3e', fontWeight: 'bold' },
-  smallBtn: { backgroundColor: '#000', width: 30, height: 30, justifyContent: 'center', alignItems: 'center', borderRadius: 5 },
-  smallBtnText: { color: '#8bab3e', fontSize: 20, fontWeight: 'bold' },
-  scoreTitle: { fontSize: 20, fontWeight: 'bold', marginTop: 10, marginBottom: 5, fontFamily: 'monospace' },
-  scoreList: { width: '100%', maxHeight: 150 },
-  scoreItem: { flexDirection: 'row', justifyContent: 'center', width: '100%', paddingVertical: 8, borderBottomWidth: 1, borderColor: '#000' },
-  scoreItemText: { fontFamily: 'monospace', fontSize: 16, fontWeight: 'bold' }
+  smallBtn: { backgroundColor: '#000', width: 28, height: 28, justifyContent: 'center', alignItems: 'center', borderRadius: 4 },
+  smallBtnText: { color: '#8bab3e', fontSize: 18, fontWeight: 'bold' },
+  scoreTitle: { fontSize: 18, fontWeight: 'bold', marginTop: 10, marginBottom: 5, fontFamily: 'monospace' },
+  scoreList: { width: '100%', maxHeight: 120 },
+  scoreItem: { flexDirection: 'row', justifyContent: 'center', width: '100%', paddingVertical: 6, borderBottomWidth: 1, borderColor: '#000' },
+  scoreItemText: { fontFamily: 'monospace', fontSize: 14, fontWeight: 'bold' }
 });
