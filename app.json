@@ -2,7 +2,7 @@
   "expo": {
     "name": "snake",
     "slug": "snake",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -13,7 +13,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "buildNumber": "2"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +22,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.mk1121.snake"
+      "package": "com.mk1121.snake",
+      "versionCode": 2
     },
     "web": {
       "favicon": "./assets/favicon.png",
