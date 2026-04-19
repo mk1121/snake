@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Dimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
 const GRID_SIZE = 20;
@@ -24,6 +25,7 @@ export default function App() {
   }), []);
 
   const resetGame = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSnake(INITIAL_SNAKE);
     setDirection(INITIAL_DIRECTION);
     setFood(getRandomCoordinate());
@@ -49,6 +51,7 @@ export default function App() {
           newHead.y >= GRID_SIZE ||
           prevSnake.some((segment) => segment.x === newHead.x && segment.y === newHead.y)
         ) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           setIsGameOver(true);
           return prevSnake;
         }
@@ -56,6 +59,7 @@ export default function App() {
         const newSnake = [newHead, ...prevSnake];
 
         if (newHead.x === food.x && newHead.y === food.y) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           setScore((s) => s + 1);
           setFood(getRandomCoordinate());
         } else {
@@ -72,8 +76,14 @@ export default function App() {
 
   const handlePress = (newDirection) => {
     if ((newDirection.x !== 0 && direction.x === 0) || (newDirection.y !== 0 && direction.y === 0)) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setDirection(newDirection);
     }
+  };
+
+  const changeLevel = (delta) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setLevel(prev => Math.min(10, Math.max(1, prev + delta)));
   };
 
   return (
@@ -83,14 +93,14 @@ export default function App() {
         <Text style={styles.headerText}>SCORE: {score}</Text>
         <View style={styles.levelContainer}>
           <TouchableOpacity 
-            onPress={() => setLevel(prev => Math.max(1, prev - 1))}
+            onPress={() => changeLevel(-1)}
             style={styles.levelButton}
           >
             <Text style={styles.levelButtonText}>-</Text>
           </TouchableOpacity>
           <Text style={styles.headerText}>LVL: {level}</Text>
           <TouchableOpacity 
-            onPress={() => setLevel(prev => Math.min(10, prev + 1))}
+            onPress={() => changeLevel(1)}
             style={styles.levelButton}
           >
             <Text style={styles.levelButtonText}>+</Text>

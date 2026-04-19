@@ -16,8 +16,11 @@ The core execution cycle is governed by a state-driven interval.
 ### A. Aesthetic Considerations
 To achieve high-fidelity retro simulation, the application employs a monochromatic color scheme (Hex: `#8bab3e`, `#98b64e`). The visual layout uses a flexbox-driven grid system to maintain aspect ratio integrity across heterogeneous Android display resolutions.
 
-### B. Control Logic
-Directional inputs are filtered through a validation layer to prevent 180-degree vector reversals, which would otherwise result in immediate logical termination (self-collision).
+### C. Haptic Feedback
+The application integrates `expo-haptics` to enhance user immersion through tactile responses. Different vibration patterns are triggered during key events:
+*   **Light Impact:** Directional changes and level adjustments.
+*   **Success Notification:** Consuming food items.
+*   **Error Notification:** Collision and game-over states.
 
 ## IV. Quality Assurance and Code Standards
 ### A. Documentation Policy
@@ -27,4 +30,4 @@ Strict adherence to a non-commenting policy was maintained throughout the develo
 The application demonstrates negligible memory overhead and maintains consistent frame rates even at maximum difficulty (Level X), confirming the efficiency of the React Native reconciliation engine.
 
 ## V. Conclusion and Future Work
-The project successfully achieves all initial design parameters. Future iterations could incorporate persistent high-score storage via local asynchronous storage or the integration of haptic feedback to enhance user immersion.
+The project successfully achieves all initial design parameters. Future iterations could incorporate persistent high-score storage via local asynchronous storage or the integration of localized sound effects to further enhance the retro atmosphere.
