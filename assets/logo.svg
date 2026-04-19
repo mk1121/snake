@@ -1,0 +1,20 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" fill="#8bab3e"/>
+  <!-- Retro Snake Body -->
+  <rect x="256" y="256" width="128" height="128" fill="#000000"/>
+  <rect x="384" y="256" width="128" height="128" fill="#000000"/>
+  <rect x="512" y="256" width="128" height="128" fill="#000000"/>
+  <rect x="640" y="256" width="128" height="128" fill="#000000"/>
+  <rect x="640" y="384" width="128" height="128" fill="#000000"/>
+  <rect x="640" y="512" width="128" height="128" fill="#000000"/>
+  <rect x="512" y="512" width="128" height="128" fill="#000000"/>
+  <rect x="384" y="512" width="128" height="128" fill="#000000"/>
+  <rect x="256" y="512" width="128" height="128" fill="#000000"/>
+  <rect x="256" y="640" width="128" height="128" fill="#000000"/>
+  <rect x="256" y="768" width="128" height="128" fill="#000000"/>
+  <rect x="384" y="768" width="128" height="128" fill="#000000"/>
+  <rect x="512" y="768" width="128" height="128" fill="#000000"/>
+  <rect x="640" y="768" width="128" height="128" fill="#000000"/>
+  <!-- Food Item -->
+  <rect x="768" y="128" width="96" height="96" fill="#000000" rx="48"/>
+</svg>
