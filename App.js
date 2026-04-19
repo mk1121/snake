@@ -4,13 +4,14 @@ import { StatusBar } from 'expo-status-bar';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const GRID_SIZE = 20;
 const IS_WEB = Platform.OS === 'web';
 const MAX_BOARD_WIDTH = 500;
 const CELL_SIZE = Math.floor((Math.min(width, MAX_BOARD_WIDTH) * 0.9) / GRID_SIZE);
 const BOARD_SIZE = CELL_SIZE * GRID_SIZE;
 
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 const INITIAL_SNAKE = [{ x: 10, y: 10 }, { x: 10, y: 11 }, { x: 10, y: 12 }];
 const INITIAL_DIRECTION = { x: 0, y: -1 };
 
@@ -29,6 +30,7 @@ export default function App() {
 
   useEffect(() => {
     loadData();
+    syncUnsyncedScores();
   }, []);
 
   useEffect(() => {
@@ -49,12 +51,38 @@ export default function App() {
 
   const loadData = async () => {
     try {
-      const savedScores = await AsyncStorage.getItem('scores');
       const savedUser = await AsyncStorage.getItem('username');
       const savedHaptic = await AsyncStorage.getItem('haptic');
-      if (savedScores) setScores(JSON.parse(savedScores));
       if (savedUser) setUsername(savedUser);
       if (savedHaptic !== null) setIsHapticEnabled(JSON.parse(savedHaptic));
+
+      try {
+        const response = await fetch(`${API_URL}/scores`);
+        const remoteScores = await response.json();
+        setScores(remoteScores);
+        await AsyncStorage.setItem('scores', JSON.stringify(remoteScores));
+      } catch (err) {
+        const savedScores = await AsyncStorage.getItem('scores');
+        if (savedScores) setScores(JSON.parse(savedScores));
+      }
+    } catch (e) {}
+  };
+
+  const syncUnsyncedScores = async () => {
+    try {
+      const unsynced = await AsyncStorage.getItem('unsynced_scores');
+      if (unsynced) {
+        const scoresToSync = JSON.parse(unsynced);
+        for (const s of scoresToSync) {
+          await fetch(`${API_URL}/score`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(s),
+          });
+        }
+        await AsyncStorage.removeItem('unsynced_scores');
+        loadData();
+      }
     } catch (e) {}
   };
 
@@ -88,10 +116,23 @@ export default function App() {
   };
 
   const saveScore = async () => {
-    const newScore = { username, score };
-    const updatedScores = [newScore, ...scores].sort((a, b) => b.score - a.score).slice(0, 5);
-    setScores(updatedScores);
-    saveData('scores', updatedScores);
+    const newScore = { username, score, level };
+    try {
+      await fetch(`${API_URL}/score`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newScore),
+      });
+      loadData();
+    } catch (err) {
+      const unsynced = await AsyncStorage.getItem('unsynced_scores');
+      const list = unsynced ? JSON.parse(unsynced) : [];
+      list.push(newScore);
+      await AsyncStorage.setItem('unsynced_scores', JSON.stringify(list));
+      
+      const localScores = [newScore, ...scores].sort((a, b) => b.score - a.score).slice(0, 5);
+      setScores(localScores);
+    }
   };
 
   useEffect(() => {
@@ -116,8 +157,12 @@ export default function App() {
         const newSnake = [newHead, ...prevSnake];
         if (newHead.x === food.x && newHead.y === food.y) {
           triggerHaptic('Light');
-          setScore((s) => s + 1);
+          const newScore = score + 1;
+          setScore(newScore);
           setFood(getRandomCoordinate());
+          if (newScore % 5 === 0 && level < 10) {
+            setLevel(l => l + 1);
+          }
         } else {
           newSnake.pop();
         }
@@ -213,7 +258,9 @@ export default function App() {
               data={scores}
               keyExtractor={(_, i) => i.toString()}
               renderItem={({ item }) => (
-                <View style={styles.scoreItem}><Text style={styles.scoreItemText}>{item.username}: {item.score}</Text></View>
+                <View style={styles.scoreItem}>
+                  <Text style={styles.scoreItemText}>{item.username}: {item.score} (Lvl {item.level || 1})</Text>
+                </View>
               )}
               style={styles.scoreList}
             />
